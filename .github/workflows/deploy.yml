@@ -54,3 +54,18 @@ jobs:
         # Wrangler-Version (3.90.0) OpenNext-Cloudflare-Projekte nicht korrekt
         # erkennt ("Missing entry-point").
         run: npx opennextjs-cloudflare deploy
+
+      - name: Server-seitige Secrets im Worker setzen
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Diese Werte werden zur Laufzeit im Worker über process.env gelesen
+        # (Admin-Bereich, E-Mail-Versand) und müssen deshalb bei JEDEM Deploy
+        # erneut gesetzt werden – wrangler secret put übersteht zwar spätere
+        # Deploys, aber sicherheitshalber hier deklarativ statt manuell im
+        # Cloudflare-Dashboard, damit es nie wieder auseinanderlaufen kann.
+        run: |
+          printf '%s' "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+          printf '%s' "${{ vars.ADMIN_NOTIFICATION_EMAIL }}" | npx wrangler secret put ADMIN_NOTIFICATION_EMAIL
+          printf '%s' "${{ vars.EMAIL_FROM }}" | npx wrangler secret put EMAIL_FROM
+          printf '%s' "${{ secrets.RESEND_API_KEY }}" | npx wrangler secret put RESEND_API_KEY
