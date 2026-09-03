@@ -4,7 +4,11 @@
 -- Audit-Log, Einstellungen.
 -- ============================================================
 
-create extension if not exists "pgcrypto"; -- gen_random_uuid(), gen_random_bytes()
+-- Explizit ins "public"-Schema installieren: Supabase legt Erweiterungen
+-- standardmäßig ins Schema "extensions" - unsere SECURITY DEFINER Funktionen
+-- setzen search_path bewusst hart auf "public" (Sicherheitshärtung gegen
+-- search_path-Hijacking) und würden gen_random_bytes() sonst nicht finden.
+create extension if not exists "pgcrypto" with schema public;
 
 -- ------------------------------------------------------------
 -- events
