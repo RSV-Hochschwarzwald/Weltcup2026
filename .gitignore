@@ -31,3 +31,11 @@ coverage/
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Niemals Notizdateien mit echten Zugangsdaten versehentlich committen.
+# Bitte Secrets stattdessen in einem Passwortmanager außerhalb dieses
+# Ordners aufbewahren, nicht als Textdatei im Projekt.
+*geheim*
+*secret*.txt
+*passwort*
+*password*.txt

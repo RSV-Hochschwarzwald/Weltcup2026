@@ -36,8 +36,10 @@ enthalten.
   Supabase-Dashboard angelegt (siehe README).
 - Rollenmodell über `profiles.role` (`admin`/`viewer`). `viewer` kann lesen/exportieren, aber keine
   schreibenden Server Actions ausführen (`requireRole("admin")` in `src/app/admin/actions.ts`).
-- `src/proxy.ts` (Next.js Middleware-Nachfolger) erzwingt eine gültige Session für alle `/admin/*`-Routen
-  außer `/admin/login`.
+- `src/app/admin/(dashboard)/layout.tsx` prüft serverseitig bei jedem Aufruf über `getCurrentAdmin()`, ob eine
+  gültige Session existiert, und leitet sonst zu `/admin/login` um. Bewusst keine Middleware dafür (siehe
+  docs/ARCHITECTURE.md, Abschnitt "Cloudflare-Bundle-Größe") – die Layout-Prüfung ist die alleinige,
+  ausreichende Sicherheitsgrenze, da sie vor jedem Rendern des geschützten Bereichs läuft.
 - Admin-Server-Actions prüfen die Rolle serverseitig erneut (`requireRole`), bevor der Service-Role-Client
   verwendet wird – ein manipulierter Client-Request kann die Prüfung nicht umgehen.
 

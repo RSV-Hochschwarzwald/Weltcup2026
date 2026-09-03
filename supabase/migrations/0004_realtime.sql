@@ -26,7 +26,7 @@ begin
     perform realtime.send(v_payload, 'status', 'shift-status', false);
   end if;
 exception
-  when undefined_function or undefined_schema then
+  when undefined_function or invalid_schema_name then
     -- Realtime-"Broadcast from Database" ist auf diesem Supabase-Projekt
     -- (noch) nicht verfügbar. Die Buchung selbst darf dadurch niemals
     -- fehlschlagen – das Frontend nutzt dann automatisch den Polling-

@@ -53,6 +53,20 @@ Microsoft 365 bleibt optional nutzbar für:
 6. Ein Datenbank-Trigger sendet den neuen, anonymisierten Belegungsstand per Realtime-Broadcast an alle
    verbundenen Browser (`shift-status`-Kanal) – andere Nutzer sehen die Änderung ohne Neuladen.
 
+## Cloudflare-Bundle-Größe: keine Middleware
+
+Der kostenlose Cloudflare-Workers-Plan begrenzt jeden Worker auf 3 MiB (komprimiert). Next.js-Middleware
+(`src/proxy.ts`) wurde von OpenNext als separates "Node.js middleware"-Bundle behandelt und hat dabei rund
+3,2 MB beigesteuert – unabhängig davon, wie schlank der Middleware-Code selbst war (es handelt sich um einen
+Laufzeit-Overhead des experimentellen Node.js-Middleware-Supports von `@opennextjs/cloudflare`, nicht um eine
+Folge unserer Imports). Die Middleware wurde daher komplett entfernt.
+
+Der Admin-Bereich ist dadurch nicht weniger sicher: `src/app/admin/(dashboard)/layout.tsx` prüft bei **jedem**
+Aufruf serverseitig über `getCurrentAdmin()`, ob eine gültige Session mit passender Rolle vorliegt, und leitet
+sonst um. Diese Prüfung lief vorher zusätzlich (redundant) auch in der Middleware – ihr Wegfall bedeutet nur,
+dass ein eindeutig ausgeloggter Besucher minimal später (beim Rendern statt am Edge) umgeleitet wird, niemals
+aber, dass geschützte Daten ausgeliefert würden.
+
 ## Bekannte, bewusst in Kauf genommene Einschränkungen
 
 - Der `uuid`-Paket-Hinweis in `npm audit` (moderate, transitive Abhängigkeit von `exceljs`) betrifft ausschließlich
