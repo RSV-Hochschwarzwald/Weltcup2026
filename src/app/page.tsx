@@ -23,6 +23,13 @@ export default async function HomePage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-8 sm:pt-12">
       <header className="mb-8 text-center">
+        <img
+          src="/rsv-logo.jpg"
+          alt="RSV Hochschwarzwald e.V."
+          className="mx-auto mb-4 h-16 w-auto sm:h-20"
+          width={220}
+          height={112}
+        />
         <p className="text-sm font-bold uppercase tracking-widest text-brand-700">Weltcup Skispringen</p>
         <h1 className="mt-1 text-3xl font-extrabold text-slate-900 sm:text-4xl">Titisee-Neustadt</h1>
         <p className="mt-3 text-lg font-semibold text-slate-800">Helfereinteilung</p>
