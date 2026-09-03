@@ -1,0 +1,15 @@
+"use client";
+
+import { createBrowserClient } from "@supabase/ssr";
+
+/**
+ * Browser-Client mit dem öffentlichen anon-Key. Unterliegt vollständig
+ * RLS (siehe supabase/migrations/0002_rls.sql) – kann daher niemals
+ * personenbezogene Helferdaten direkt lesen oder schreiben.
+ */
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}

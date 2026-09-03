@@ -1,0 +1,27 @@
+# Lokale Environment Variables für `next dev` bzw. `npm run cf:preview`
+# (Cloudflare-Workers-Laufzeit über den OpenNext-Adapter).
+#
+# Kopieren nach ".dev.vars" und mit echten Werten befüllen. ".dev.vars" ist
+# in .gitignore ausgeschlossen und wird niemals committet.
+#
+# Für das produktive Deployment werden dieselben Werte stattdessen als
+# Cloudflare-Worker-Secrets/-Vars gesetzt (siehe README, Abschnitt Deployment).
+
+NEXTJS_ENV=development
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+RESEND_API_KEY=
+EMAIL_FROM="RSV Hochschwarzwald <helfer@rsv-hochschwarzwald.de>"
+
+NEXT_PUBLIC_EVENT_NAME="Weltcup Skispringen Titisee-Neustadt 2026"
+NEXT_PUBLIC_ORGANIZATION_NAME="RSV Hochschwarzwald e.V."
+ADMIN_NOTIFICATION_EMAIL=helfer@rsv-hochschwarzwald.de
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+WAITLIST_ENABLED=false
+NEXT_PUBLIC_PUBLIC_FIRST_NAMES_ENABLED=false
+NOTIFY_ON_SHIFT_FULL=true
+MICROSOFT_INTEGRATION_ENABLED=false

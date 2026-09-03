@@ -1,0 +1,53 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Tests ausführen
+        run: npm test
+
+      - name: Next.js + OpenNext-Cloudflare-Bundle bauen
+        env:
+          # Diese NEXT_PUBLIC_*-Werte werden fest in das JS-Bundle
+          # einkompiliert und müssen daher bereits beim Bauen bekannt sein.
+          # Als Repository-Variablen unter GitHub -> Settings -> Secrets
+          # and variables -> Actions -> Variables hinterlegen.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_EVENT_NAME: ${{ vars.NEXT_PUBLIC_EVENT_NAME }}
+          NEXT_PUBLIC_ORGANIZATION_NAME: ${{ vars.NEXT_PUBLIC_ORGANIZATION_NAME }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_PUBLIC_FIRST_NAMES_ENABLED: ${{ vars.NEXT_PUBLIC_PUBLIC_FIRST_NAMES_ENABLED }}
+          # Für den Build-Schritt genügt ein Platzhalter für den Service-Role-Key
+          # (er wird zur Build-Zeit nicht verwendet, nur zur Laufzeit im Worker).
+          SUPABASE_SERVICE_ROLE_KEY: build-time-placeholder
+        run: npm run cf:build
+
+      - name: Nach Cloudflare Workers deployen
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

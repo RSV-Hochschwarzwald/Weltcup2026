@@ -1,0 +1,65 @@
+name: Supabase Keep-Alive
+
+# Der kostenlose Supabase-Plan pausiert ein Projekt automatisch nach 7 Tagen
+# ohne API-Zugriff. Da die Helferanmeldung bis Dezember 2026 kaum täglich
+# genutzt wird, schickt dieser Workflow einmal am Tag eine harmlose,
+# öffentliche Leseanfrage an Supabase, um das Projekt aktiv zu halten.
+#
+# Zusätzlich schreibt der Workflow bei jedem Lauf einen Zeitstempel in
+# keep-alive/last-ping.txt und committet ihn. Das ist kein Selbstzweck:
+# GitHub deaktiviert zeitgesteuerte Workflows (schedule/cron) automatisch,
+# wenn ein Repository 60 Tage lang keine echte Aktivität (Commits) hatte –
+# ein reiner Workflow-Lauf ohne Commit zählt dafür NICHT. Der tägliche
+# Commit verhindert also, dass sich dieser Workflow selbst abschaltet.
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # täglich um 06:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Supabase anpingen (öffentliche, unkritische Leseanfrage)
+        env:
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY sind nicht als Actions-Variablen gesetzt."
+            exit 1
+          fi
+
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/event_public_info?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "Supabase-Antwort-Status: $status"
+          cat /tmp/response.json
+
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Supabase hat mit Status $status geantwortet – Projekt prüfen (evtl. pausiert/gelöscht)."
+            exit 1
+          fi
+
+      - name: Zeitstempel committen (hält den Workflow selbst aktiv)
+        run: |
+          mkdir -p keep-alive
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > keep-alive/last-ping.txt
+          git config user.name "keep-alive-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add keep-alive/last-ping.txt
+          if git diff --cached --quiet; then
+            echo "Keine Änderung, kein Commit nötig."
+          else
+            git commit -m "chore: Supabase keep-alive ping"
+            git push
+          fi

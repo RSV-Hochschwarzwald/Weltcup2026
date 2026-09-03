@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid #1f6cf5;
+  outline-offset: 2px;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 2px solid #cbd5e1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.input:focus {
+  border-color: #1f6cf5;
+}
