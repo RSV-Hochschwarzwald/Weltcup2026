@@ -24,8 +24,10 @@ export async function createSupabaseServerClient() {
               cookieStore.set(name, value, options ?? {});
             });
           } catch {
-            // Wird in Server Components ohne Response-Objekt aufgerufen;
-            // die Middleware kümmert sich in diesem Fall um das Refreshen.
+            // Wird in Server Components ohne Response-Objekt aufgerufen
+            // (Cookies können dort nicht gesetzt werden). Server Actions und
+            // Route Handlers (z. B. Login/Logout, admin/actions.ts) laufen
+            // mit Response-Objekt und aktualisieren die Session dort normal.
           }
         },
       },

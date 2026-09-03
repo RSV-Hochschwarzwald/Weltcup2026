@@ -1,40 +1,35 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+/**
+ * Leichtgewichtiger Vor-Check ohne Supabase-SDK (das würde die Middleware-
+ * Bundle-Größe auf Cloudflare unnötig aufblähen, siehe docs/ARCHITECTURE.md).
+ * Prüft nur, ob überhaupt eine Supabase-Session-Cookie vorhanden ist, um
+ * eindeutig ausgeloggte Besucher sofort zum Login umzuleiten.
+ *
+ * Die WIRKLICHE Sicherheitsprüfung (gültige Session + Admin-/Viewer-Rolle)
+ * passiert weiterhin serverseitig in src/app/admin/(dashboard)/layout.tsx
+ * über getCurrentAdmin() – diese Middleware ist reine UX-Optimierung, kein
+ * Sicherheitsmechanismus.
+ */
+const SUPABASE_AUTH_COOKIE_PATTERN = /^sb-.*-auth-token/;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options ?? {}));
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAdminRoute = path.startsWith("/admin") && path !== "/admin/login";
 
-  if (isAdminRoute && !user) {
+  if (!isAdminRoute) {
+    return NextResponse.next();
+  }
+
+  const hasSessionCookie = request.cookies.getAll().some((c) => SUPABASE_AUTH_COOKIE_PATTERN.test(c.name));
+
+  if (!hasSessionCookie) {
     const loginUrl = new URL("/admin/login", request.url);
     loginUrl.searchParams.set("redirect", path);
     return NextResponse.redirect(loginUrl);
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
