@@ -19,7 +19,7 @@ jobs:
       - name: Node.js einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Abhängigkeiten installieren
@@ -46,8 +46,11 @@ jobs:
         run: npm run cf:build
 
       - name: Nach Cloudflare Workers deployen
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Bewusst der Projekt-eigene Wrangler (aus package.json, aktuelle
+        # Version) statt cloudflare/wrangler-action@v3, dessen mitgelieferte
+        # Wrangler-Version (3.90.0) OpenNext-Cloudflare-Projekte nicht korrekt
+        # erkennt ("Missing entry-point").
+        run: npx opennextjs-cloudflare deploy
