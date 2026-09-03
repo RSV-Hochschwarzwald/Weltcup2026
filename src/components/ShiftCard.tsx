@@ -50,6 +50,12 @@ export function ShiftCard({
         {statusLabel}
       </p>
 
+      {shift.firstNames.length > 0 && (
+        <p className={`mt-1 text-sm ${disabled ? "text-slate-400" : "text-slate-600"}`}>
+          Bereits angemeldet: {shift.firstNames.join(", ")}
+        </p>
+      )}
+
       {shift.isFull && shift.waitlistEnabled && onJoinWaitlist ? (
         <button
           type="button"

@@ -18,6 +18,7 @@ function makeRow(overrides: Partial<ShiftPublicStatus> = {}): ShiftPublicStatus 
     available_count: 4,
     is_full: false,
     waitlist_count: 0,
+    first_names: [],
     ...overrides,
   };
 }

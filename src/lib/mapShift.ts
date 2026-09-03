@@ -18,6 +18,7 @@ export function mapPublicShift(row: ShiftPublicStatus, waitlistEnabled: boolean)
     isBookable: !isLocked && !row.is_full,
     waitlistCount: row.waitlist_count,
     waitlistEnabled,
+    firstNames: row.first_names ?? [],
   };
 }
 

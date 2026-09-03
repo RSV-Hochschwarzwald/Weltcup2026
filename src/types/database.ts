@@ -43,6 +43,7 @@ export interface ShiftPublicStatus {
   available_count: number;
   is_full: boolean;
   waitlist_count: number;
+  first_names: string[];
 }
 
 export interface HelperRow {
@@ -120,4 +121,5 @@ export interface PublicShift {
   isBookable: boolean;
   waitlistCount: number;
   waitlistEnabled: boolean;
+  firstNames: string[];
 }
