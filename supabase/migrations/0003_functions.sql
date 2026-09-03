@@ -83,10 +83,10 @@ begin
     ) as is_bookable
   from shifts s
   left join (
-    select shift_id, count(*) as active_count
-    from registrations
-    where status = 'active'
-    group by shift_id
+    select r.shift_id, count(*) as active_count
+    from registrations r
+    where r.status = 'active'
+    group by r.shift_id
   ) cnt on cnt.shift_id = s.id
   where s.id = any(p_shift_ids);
 end;
