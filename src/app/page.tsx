@@ -1,6 +1,7 @@
 import { PublicShiftsBoard } from "@/components/PublicShiftsBoard";
 import { getActiveEvent, getPublicShifts, getWaitlistEnabled } from "@/lib/publicData";
 import { formatDateShort } from "@/lib/format";
+import { config } from "@/lib/config";
 
 export const revalidate = 0;
 
@@ -30,15 +31,15 @@ export default async function HomePage() {
           width={220}
           height={112}
         />
-        <p className="text-sm font-bold uppercase tracking-widest text-brand-700">Weltcup Skispringen</p>
-        <h1 className="mt-1 text-3xl font-extrabold text-slate-900 sm:text-4xl">Titisee-Neustadt</h1>
+        <p className="text-sm font-bold uppercase tracking-widest text-brand-700">{config.eventKicker}</p>
+        <h1 className="mt-1 text-3xl font-extrabold text-slate-900 sm:text-4xl">{config.eventLocation}</h1>
         <p className="mt-3 text-lg font-semibold text-slate-800">Helfereinteilung</p>
         <p className="text-slate-600">
           {formatDateShort(event.start_date)} – {formatDateShort(event.end_date)}
         </p>
         <p className="mx-auto mt-4 max-w-xl text-slate-600">
-          Vielen Dank für deine Unterstützung beim Weltcup Skispringen in Titisee-Neustadt. Wähle einfach die
-          Schicht oder Schichten aus, bei denen du uns unterstützen kannst.
+          Vielen Dank für deine Unterstützung bei {config.eventName}. Wähle einfach die Schicht oder Schichten
+          aus, bei denen du uns unterstützen kannst.
         </p>
       </header>
 

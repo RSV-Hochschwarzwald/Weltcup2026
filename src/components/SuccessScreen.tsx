@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDateLong, formatTimeRange } from "@/lib/format";
-import { getEditLink } from "@/lib/config";
+import { config, getEditLink } from "@/lib/config";
 import type { PublicShift } from "@/types/database";
 
 export function SuccessScreen({
@@ -51,7 +51,7 @@ export function SuccessScreen({
         )}
 
         <p className="mt-5 text-sm text-slate-600">
-          Wir freuen uns auf deine Unterstützung beim Weltcup Skispringen in Titisee-Neustadt.
+          Wir freuen uns auf deine Unterstützung bei {config.eventName}.
         </p>
 
         <div className="mt-5 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 p-4 text-left">

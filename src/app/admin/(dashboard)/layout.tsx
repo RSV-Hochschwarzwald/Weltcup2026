@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
 import { LogoutButton } from "@/components/admin/LogoutButton";
+import { config } from "@/lib/config";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await getCurrentAdmin();
@@ -17,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex items-center gap-3">
             <img src="/rsv-logo.jpg" alt="RSV Hochschwarzwald e.V." className="h-8 w-auto" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Weltcup 2026 · Admin</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-700">{config.eventName} · Admin</p>
               <nav className="mt-1 flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
                 <Link href="/admin" className="hover:text-brand-700">Übersicht</Link>
                 <Link href="/admin/helfer" className="hover:text-brand-700">Helfer &amp; Schichten</Link>

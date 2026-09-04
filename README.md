@@ -20,6 +20,7 @@ Architekturentscheidung (Microsoft 365 vs. Supabase) und Begründung: [docs/ARCH
 - [Backup](#backup)
 - [Excel-/CSV-Export](#excel-csv-export)
 - [Microsoft-365-Integration](#microsoft-365-integration-optional)
+- [Neue Veranstaltung einrichten](#neue-veranstaltung-einrichten)
 - [Projektstruktur](#projektstruktur)
 
 ## Technik
@@ -258,6 +259,51 @@ Die Excel-Datei ist ein Export-Artefakt – Supabase bleibt die alleinige Datenq
   den gewünschten Vereinsordner hoch. Eine automatische Ablage per Microsoft Graph API kann bei Bedarf ergänzt
   werden (`MICROSOFT_INTEGRATION_ENABLED`, `MICROSOFT_TENANT_ID`, `MICROSOFT_CLIENT_ID`,
   `MICROSOFT_CLIENT_SECRET` sind in `.env.example` bereits vorbereitet).
+
+## Neue Veranstaltung einrichten
+
+Die Anwendung ist bewusst generisch gebaut: Veranstaltungsname, Ort und Schichten sind reine Konfiguration,
+nicht in den Code einprogrammiert. Für eine **neue Veranstaltung** (z. B. den Weltcup im nächsten Jahr, oder
+eine ganz andere Vereinsveranstaltung) reicht eine eigene Kopie mit angepasster Konfiguration – kein Programmieren
+nötig. Jede Veranstaltung bekommt dabei ihr **eigenes** Supabase-Projekt und ihren **eigenen** Cloudflare-Worker
+(sauber getrennte Daten, kein Risiko für alte Anmeldungen).
+
+**Empfehlung:** Das GitHub-Repository einmalig als **Template-Repository** markieren
+(Repo → Settings → allgemein → Häkchen bei „Template repository"). Danach genügt für jede neue Veranstaltung
+ein Klick auf **„Use this template"** auf der Repo-Startseite, statt manuell zu klonen.
+
+### Schritt für Schritt
+
+1. **Neues Repository** aus der Vorlage erstellen (**„Use this template"**, oder Repo klonen und neu
+   pushen), z. B. `weltcup-helfer-2027`.
+2. **Neues, leeres Supabase-Projekt** anlegen (siehe [Supabase-Einrichtung](#supabase-einrichtung) oben) –
+   niemals das bestehende Projekt einer laufenden/vergangenen Veranstaltung wiederverwenden.
+3. Migrationen **0001 bis 0005** (`supabase/migrations/`) der Reihe nach im SQL Editor ausführen.
+4. **`supabase/seed.sql` anpassen**, bevor du sie ausführst – das ist der einzige Ort, an dem die Schichten
+   definiert werden:
+   - `title`, `start_date`, `end_date` des Events
+   - die `insert into shifts (...)`-Zeilen: Datum, Bezeichnung, Start-/Endzeit, Kapazität, Reihenfolge.
+     Beliebig viele **Tage** sind möglich; die Admin-Übersicht und der Excel-Export gehen aber von genau
+     **zwei Schichten pro Tag** mit sichtbarer Übergabe aus (wie beim Weltcup) – bei einer abweichenden
+     Anzahl Schichten pro Tag müssten `src/app/admin/(dashboard)/helfer/page.tsx`,
+     `src/lib/exportData.ts` und die XLSX-Route entsprechend angepasst werden
+   - Danach die angepasste `seed.sql` im SQL Editor ausführen.
+5. Admin-Konto für das neue Projekt anlegen (siehe [Admin-Konto anlegen](#admin-konto-anlegen)).
+6. **Environment Variables** für die neue Veranstaltung anpassen (lokal in `.env.local`, produktiv als
+   GitHub-Actions-Variablen/-Secrets – siehe [Environment Variables](#environment-variables)):
+   - `NEXT_PUBLIC_EVENT_NAME`, `NEXT_PUBLIC_EVENT_KICKER`, `NEXT_PUBLIC_EVENT_LOCATION`
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (vom neuen
+     Supabase-Projekt)
+   - `ADMIN_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_APP_URL` (wird nach Schritt 8 final gesetzt)
+7. In `wrangler.jsonc` den `name` (und den `service`-Wert im `WORKER_SELF_REFERENCE`-Binding) auf einen neuen,
+   noch nicht verwendeten Worker-Namen ändern, z. B. `weltcup2027`.
+8. Wie unter [Deployment](#deployment) beschrieben: Cloudflare-API-Token + Account-ID als GitHub-Secrets
+   hinterlegen, Workflow laufen lassen, danach `NEXT_PUBLIC_APP_URL` auf die echte `*.workers.dev`-Adresse
+   setzen und erneut deployen.
+9. Logo (`public/rsv-logo.jpg`) kann unverändert bleiben, solange es weiterhin eine RSV-Hochschwarzwald-
+   Veranstaltung ist.
+
+Das war's – kein einziger dieser Schritte erfordert eine Codeänderung.
 
 ## Projektstruktur
 

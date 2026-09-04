@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
+import { config } from "@/lib/config";
 import type { PublicShift } from "@/types/database";
 
 type Step = "form" | "confirm" | "error";
@@ -297,7 +298,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function PrivacyNotice() {
   return (
     <p className="text-xs leading-relaxed text-slate-500">
-      Deine Daten werden ausschließlich zur Organisation des Helfereinsatzes beim Weltcup Skispringen
+      Deine Daten werden ausschließlich zur Organisation des Helfereinsatzes bei {config.eventName}
       verwendet. Weitere Informationen findest du in unserer{" "}
       <a href="/datenschutz" target="_blank" rel="noreferrer" className="underline">
         Datenschutzerklärung

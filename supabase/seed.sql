@@ -3,6 +3,10 @@
 -- Initialdaten für den Weltcup Skispringen Titisee-Neustadt 2026.
 -- Zeiten sind FEST vorgegeben (CLAUDE-Vorgabe Abschnitt 67) und
 -- dürfen nicht automatisch berechnet werden.
+--
+-- FÜR EINE NEUE VERANSTALTUNG: einfach Titel/Daten/Schichten unten
+-- anpassen und in einem frischen Supabase-Projekt ausführen. Siehe
+-- README, Abschnitt "Neue Veranstaltung einrichten".
 -- ============================================================
 
 insert into events (id, title, start_date, end_date, active)

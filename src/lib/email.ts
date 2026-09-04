@@ -59,7 +59,7 @@ export async function sendHelperConfirmationEmail(params: {
       : "";
   const text = `Hallo ${params.firstName},
 
-vielen Dank für deine Unterstützung beim Weltcup Skispringen in Titisee-Neustadt.
+vielen Dank für deine Unterstützung bei ${config.eventName}.
 
 Du bist für folgende Helfereinsätze angemeldet:
 

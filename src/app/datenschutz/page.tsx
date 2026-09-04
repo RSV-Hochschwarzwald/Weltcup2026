@@ -20,8 +20,8 @@ export default function DatenschutzPage() {
       <Section title="2. Zweck der Datenverarbeitung">
         <p>
           Die im Rahmen dieser Helferanmeldung erhobenen Daten (Name, Kontaktdaten, ausgewählte Schichten,
-          optionale Bemerkung) werden ausschließlich zur Organisation und Durchführung des Helfereinsatzes beim
-          Weltcup Skispringen in Titisee-Neustadt verwendet.
+          optionale Bemerkung) werden ausschließlich zur Organisation und Durchführung des Helfereinsatzes bei{" "}
+          {config.eventName} verwendet.
         </p>
       </Section>
 

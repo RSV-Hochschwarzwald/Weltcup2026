@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { config } from "@/lib/config";
 
 function LoginForm() {
   const router = useRouter();
@@ -31,7 +32,7 @@ function LoginForm() {
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
       <h1 className="mb-1 text-center text-xl font-bold text-slate-900">Adminbereich</h1>
-      <p className="mb-6 text-center text-sm text-slate-500">Weltcup Skispringen – Helfereinteilung</p>
+      <p className="mb-6 text-center text-sm text-slate-500">{config.eventName} – Helfereinteilung</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
