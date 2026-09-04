@@ -4,11 +4,31 @@
 -- Audit-Log, Einstellungen.
 -- ============================================================
 
--- Explizit ins "public"-Schema installieren: Supabase legt Erweiterungen
--- standardmäßig ins Schema "extensions" - unsere SECURITY DEFINER Funktionen
--- setzen search_path bewusst hart auf "public" (Sicherheitshärtung gegen
+-- Explizit ins "public"-Schema bringen: Supabase installiert pgcrypto in
+-- neuen Projekten standardmäßig automatisch VORAB ins Schema "extensions" -
+-- "create extension if not exists ... with schema public" ist in diesem Fall
+-- ein No-Op (die Extension existiert ja schon, nur im falschen Schema; die
+-- "with schema"-Klausel wird dann ignoriert). Unsere SECURITY DEFINER
+-- Funktionen setzen search_path bewusst hart auf "public" (Härtung gegen
 -- search_path-Hijacking) und würden gen_random_bytes() sonst nicht finden.
-create extension if not exists "pgcrypto" with schema public;
+-- Dieser Block funktioniert daher in beiden Fällen: Extension existiert noch
+-- gar nicht (frisch anlegen) oder existiert schon in einem anderen Schema
+-- (dorthin verschieben).
+do $$
+begin
+  if not exists (
+    select 1 from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+    where e.extname = 'pgcrypto' and n.nspname = 'public'
+  ) then
+    if exists (select 1 from pg_extension where extname = 'pgcrypto') then
+      alter extension pgcrypto set schema public;
+    else
+      create extension pgcrypto with schema public;
+    end if;
+  end if;
+end;
+$$;
 
 -- ------------------------------------------------------------
 -- events
