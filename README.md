@@ -260,6 +260,20 @@ Die Excel-Datei ist ein Export-Artefakt – Supabase bleibt die alleinige Datenq
   werden (`MICROSOFT_INTEGRATION_ENABLED`, `MICROSOFT_TENANT_ID`, `MICROSOFT_CLIENT_ID`,
   `MICROSOFT_CLIENT_SECRET` sind in `.env.example` bereits vorbereitet).
 
+## Akkreditierung & Helfer-Fotos (Weltcup)
+
+- Bei der Anmeldung (und später über den persönlichen Link) kann jeder Helfer ein **Foto** hochladen
+  („Bild hinzufügen“, mit Hinweis auf die Vorgaben des Akkreditierungsbüros). Der Browser verkleinert das Bild
+  vor dem Upload; gespeichert wird es in einem **privaten** Supabase-Storage-Bucket (`helper-photos`) ohne
+  öffentliche Adresse. Zugriff nur über die Server-Routen mit dem Service-Role-Key.
+- Adminbereich → **Helfer & Schichten**: **„Download Akkreditierungsliste“** (Excel im Layout der FIS-Vorlage:
+  Vorname | Name | Funktion | Bild; je Person eine Zeile, Bild-Spalte = Dateiname `Vorname_Nachname.jpg`) und
+  **„Alle Fotos herunterladen (ZIP)“** (nur Admins, Dateinamen identisch zur Liste, Umlaute werden zu `ae/oe/ue/ss`).
+- Voraussetzung: Migration `supabase/migrations/0006_helper_photos.sql` einmalig im SQL Editor ausführen.
+- Texte der Liste: `NEXT_PUBLIC_ACCREDITATION_TITLE` (Überschrift) und `NEXT_PUBLIC_ACCREDITATION_FUNCTION`
+  („Funktion“ je Helfer), Standardwerte siehe `src/lib/config.ts`.
+- Beim Löschen eines Helfers wird sein Foto mit gelöscht.
+
 ## Neue Veranstaltung einrichten
 
 Die Anwendung ist bewusst generisch gebaut: Veranstaltungsname, Ort und Schichten sind reine Konfiguration,

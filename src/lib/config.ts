@@ -14,6 +14,14 @@ export const config = {
   // Große Überschrift auf der Startseite (z. B. der Veranstaltungsort).
   eventLocation: process.env.NEXT_PUBLIC_EVENT_LOCATION ?? "Titisee-Neustadt",
   organizationName: process.env.NEXT_PUBLIC_ORGANIZATION_NAME ?? "RSV Hochschwarzwald e.V.",
+  // Akkreditierungsliste (Excel-Download im Adminbereich). Überschrift und
+  // "Funktion" der Helfer sind Veranstaltungs-Vorgaben; per Variable
+  // überschreibbar (|| statt ??, damit auch eine leere GitHub-Variable auf
+  // den Standard zurückfällt).
+  accreditationTitle:
+    process.env.NEXT_PUBLIC_ACCREDITATION_TITLE || "FIS Skisprung Weltcup Titisee-Neustadt 11.12-13.12.2026",
+  accreditationFunction:
+    process.env.NEXT_PUBLIC_ACCREDITATION_FUNCTION || "Arbeitseinsatz RSV Hochschwarzwald",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   adminNotificationEmail: process.env.ADMIN_NOTIFICATION_EMAIL ?? "",
   emailFrom: process.env.EMAIL_FROM ?? "Helferteam <no-reply@example.org>",

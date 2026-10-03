@@ -3,9 +3,14 @@
 import { useMemo, useState } from "react";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
 import { config } from "@/lib/config";
+import { uploadPhoto } from "@/lib/photoClient";
+import { PhotoPicker, useRevokePreviewOnUnmount, type PickedPhoto } from "@/components/PhotoPicker";
 import type { PublicShift } from "@/types/database";
 
 type Step = "form" | "confirm" | "error";
+
+/** Ergebnis des optionalen Foto-Uploads direkt nach der Anmeldung. */
+export type PhotoStatus = "none" | "uploaded" | "failed";
 
 interface FormState {
   firstName: string;
@@ -24,10 +29,17 @@ export function RegistrationDialog({
 }: {
   shifts: PublicShift[];
   onClose: () => void;
-  onSuccess: (result: { editToken: string; bookedShiftIds: string[]; waitlistedShiftIds: string[] }) => void;
+  onSuccess: (result: {
+    editToken: string;
+    bookedShiftIds: string[];
+    waitlistedShiftIds: string[];
+    photoStatus: PhotoStatus;
+  }) => void;
 }) {
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  useRevokePreviewOnUnmount(photo);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -64,10 +76,20 @@ export function RegistrationDialog({
         return;
       }
 
+      // Das Foto folgt erst NACH der erfolgreichen Anmeldung (der Token aus der
+      // Antwort ist der Zugriffsschlüssel). Scheitert nur das Foto, bleibt die
+      // Anmeldung gültig - die Erfolgsseite weist dann aufs Nachreichen hin.
+      let photoStatus: PhotoStatus = "none";
+      if (photo) {
+        const upload = await uploadPhoto(`/api/registration/${data.editToken}/photo`, photo.blob);
+        photoStatus = upload.ok ? "uploaded" : "failed";
+      }
+
       onSuccess({
         editToken: data.editToken,
         bookedShiftIds: data.bookedShiftIds ?? [],
         waitlistedShiftIds: data.waitlistedShiftIds ?? [],
+        photoStatus,
       });
     } catch {
       setErrorMessage("Die Verbindung ist fehlgeschlagen. Bitte überprüfe deine Internetverbindung und versuche es erneut.");
@@ -96,6 +118,8 @@ export function RegistrationDialog({
           <FormStep
             form={form}
             setForm={setForm}
+            photo={photo}
+            setPhoto={setPhoto}
             shifts={sortedShifts}
             canContinue={canContinue}
             onContinue={() => setStep("confirm")}
@@ -105,6 +129,7 @@ export function RegistrationDialog({
         {step === "confirm" && (
           <ConfirmStep
             form={form}
+            hasPhoto={photo !== null}
             shifts={sortedShifts}
             submitting={submitting}
             onBack={() => setStep("form")}
@@ -141,12 +166,16 @@ export function RegistrationDialog({
 function FormStep({
   form,
   setForm,
+  photo,
+  setPhoto,
   shifts,
   canContinue,
   onContinue,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
+  photo: PickedPhoto | null;
+  setPhoto: (p: PickedPhoto | null) => void;
   shifts: PublicShift[];
   canContinue: boolean;
   onContinue: () => void;
@@ -206,6 +235,8 @@ function FormStep({
         />
       </Field>
 
+      <PhotoPicker value={photo} onChange={setPhoto} />
+
       <PrivacyNotice />
 
       <button
@@ -224,12 +255,14 @@ function FormStep({
 
 function ConfirmStep({
   form,
+  hasPhoto,
   shifts,
   submitting,
   onBack,
   onConfirm,
 }: {
   form: FormState;
+  hasPhoto: boolean;
   shifts: PublicShift[];
   submitting: boolean;
   onBack: () => void;
@@ -246,6 +279,9 @@ function ConfirmStep({
         </p>
         {form.email && <p className="text-sm text-slate-600">{form.email}</p>}
         {form.phone && <p className="text-sm text-slate-600">{form.phone}</p>}
+        <p className="mt-1 text-sm text-slate-600">
+          {hasPhoto ? "Foto: wird mit der Anmeldung übermittelt" : "Foto: noch keins hinzugefügt (kann nachgereicht werden)"}
+        </p>
       </div>
 
       <div className="flex gap-3">

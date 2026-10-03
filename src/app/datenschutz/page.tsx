@@ -23,6 +23,12 @@ export default function DatenschutzPage() {
           optionale Bemerkung) werden ausschließlich zur Organisation und Durchführung des Helfereinsatzes bei{" "}
           {config.eventName} verwendet.
         </p>
+        <p>
+          Optional hochgeladene Fotos werden ausschließlich für die Akkreditierung beim Veranstalter verwendet und
+          dazu an das Akkreditierungsbüro weitergegeben. Sie werden in einem nicht öffentlichen Speicher abgelegt
+          und sind nur für das Organisationsteam des Vereins einsehbar. [PLATZHALTER: Löschfrist der Fotos nach
+          der Veranstaltung]
+        </p>
       </Section>
 
       <Section title="3. Speicherdauer">

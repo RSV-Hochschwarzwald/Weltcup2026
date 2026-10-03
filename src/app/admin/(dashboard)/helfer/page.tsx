@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getActiveEventAdmin, getShiftsWithRegistrations, type ShiftWithRegistrations } from "@/lib/adminData";
 import { formatDateShort, formatTimeRange, formatWeekday } from "@/lib/format";
 import { getCurrentAdmin } from "@/lib/auth";
+import { collectAccreditationHelpers } from "@/lib/accreditation";
 import { AddHelperDialog } from "@/components/admin/AddHelperDialog";
 import { CancelRegistrationButton, LockShiftToggle, PromoteWaitlistButton } from "@/components/admin/RosterControls";
 
@@ -24,6 +25,9 @@ export default async function AdminHelferPage({
   if (!event) return <p>Kein aktives Event gefunden.</p>;
 
   const shifts = await getShiftsWithRegistrations(event.id);
+  const accreditationHelpers = collectAccreditationHelpers(shifts);
+  const photoCount = accreditationHelpers.filter((h) => h.hasPhoto).length;
+  const isAdmin = admin?.role === "admin";
 
   const query = q.trim().toLowerCase();
   const matches = (name: string, phone: string | null, email: string | null) =>
@@ -55,6 +59,29 @@ export default async function AdminHelferPage({
             Druckansicht
           </Link>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-card">
+        <div className="mr-auto">
+          <p className="font-bold text-slate-900">Akkreditierung</p>
+          <p className="text-sm text-slate-600">
+            Fotos: {photoCount} von {accreditationHelpers.length} Helfern vorhanden
+          </p>
+        </div>
+        <a
+          href="/api/admin/export/akkreditierung"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white"
+        >
+          Download Akkreditierungsliste
+        </a>
+        {isAdmin && (
+          <a
+            href="/api/admin/export/fotos"
+            className="rounded-lg border-2 border-brand-600 px-4 py-2 text-sm font-bold text-brand-700"
+          >
+            Alle Fotos herunterladen (ZIP)
+          </a>
+        )}
       </div>
 
       <form method="get" className="flex flex-wrap gap-3">

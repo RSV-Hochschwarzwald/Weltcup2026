@@ -3,6 +3,9 @@ import { getActiveEventAdmin, getAllShiftsAdmin, getHelperByIdAdmin } from "@/li
 import { formatDateLong, formatDateTimeDe, formatTimeRange } from "@/lib/format";
 import { getCurrentAdmin } from "@/lib/auth";
 import { HelperEditForm } from "@/components/admin/HelperEditForm";
+import { AdminPhotoUploader } from "@/components/admin/AdminPhotoUploader";
+import { PHOTO_BUCKET } from "@/lib/photos";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   AssignAdditionalShiftControl,
   MoveRegistrationControl,
@@ -24,6 +27,14 @@ export default async function HelperDetailPage({ params }: { params: Promise<{ i
   const cancelledRegs = helper.registrations.filter((r) => r.status === "cancelled");
   const bookedShiftIds = new Set(activeRegs.map((r) => r.shift_id));
   const assignableShifts = allShifts.filter((s) => !bookedShiftIds.has(s.id));
+
+  // Foto nur für Admins als kurzlebiger, signierter Link (5 Min.) - der Bucket
+  // ist privat, es gibt keine dauerhafte öffentliche Adresse.
+  let photoUrl: string | null = null;
+  if (admin?.role === "admin" && helper.photo_path) {
+    const { data } = await createAdminClient().storage.from(PHOTO_BUCKET).createSignedUrl(helper.photo_path, 300);
+    photoUrl = data?.signedUrl ?? null;
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -87,6 +98,21 @@ export default async function HelperDetailPage({ params }: { params: Promise<{ i
             <Row label="E-Mail" value={helper.email} />
             <Row label="Bemerkung" value={helper.notes} />
           </dl>
+        )}
+      </section>
+
+      <section className="rounded-2xl bg-white p-5 shadow-card">
+        <h2 className="mb-3 font-bold text-slate-900">Foto (Akkreditierung)</h2>
+        {admin?.role === "admin" ? (
+          <div className="space-y-4">
+            {photoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoUrl} alt={`Foto von ${helper.first_name} ${helper.last_name}`} className="h-48 w-auto rounded-lg object-cover" />
+            )}
+            <AdminPhotoUploader helperId={helper.id} hasPhoto={Boolean(helper.photo_path)} />
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600">{helper.photo_path ? "Foto vorhanden" : "Noch kein Foto"}</p>
         )}
       </section>
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { deleteHelperPhoto } from "@/lib/photos";
 
 async function logAction(adminEmail: string, action: string, entityType: string, entityId: string, details?: object) {
   const admin = createAdminClient();
@@ -137,8 +138,13 @@ export async function deleteHelperAction(helperId: string) {
   const me = await requireRole("admin");
   const admin = createAdminClient();
 
+  const { data: existing } = await admin.from("helpers").select("photo_path").eq("id", helperId).maybeSingle();
+
   const { error } = await admin.from("helpers").delete().eq("id", helperId);
   if (error) throw new Error(error.message);
+
+  // Mit dem Helfer auch sein Foto entfernen (personenbezogene Daten).
+  await deleteHelperPhoto(existing?.photo_path ?? null);
 
   await logAction(me.email ?? me.userId, "helper_deleted", "helper", helperId);
   revalidatePath("/admin/helfer");

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
 import { mapPublicShift } from "@/lib/mapShift";
+import { PhotoUploader } from "@/components/PhotoUploader";
 import type { PublicShift, ShiftPublicStatus, TokenHelperInfo, TokenRegistrationEntry } from "@/types/database";
 
 export function EditRegistration({ token }: { token: string }) {
@@ -173,6 +174,15 @@ export function EditRegistration({ token }: { token: string }) {
           </ul>
         </section>
       )}
+
+      <section>
+        <h2 className="mb-3 text-lg font-bold text-slate-900">Foto für die Akkreditierung</h2>
+        <PhotoUploader
+          uploadUrl={`/api/registration/${token}/photo`}
+          hasPhoto={helper.has_photo === true}
+          onUploaded={() => void load()}
+        />
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-bold text-slate-900">Kontaktdaten</h2>

@@ -54,6 +54,8 @@ export interface HelperRow {
   phone: string | null;
   notes: string | null;
   edit_token: string;
+  photo_path: string | null;
+  photo_uploaded_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +98,7 @@ export interface TokenHelperInfo {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  has_photo?: boolean;
 }
 
 export interface TokenLookupResult {
