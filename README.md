@@ -262,8 +262,11 @@ Die Excel-Datei ist ein Export-Artefakt – Supabase bleibt die alleinige Datenq
 
 ## Akkreditierung & Helfer-Fotos (Weltcup)
 
-- Bei der Anmeldung (und später über den persönlichen Link) kann jeder Helfer ein **Foto** hochladen
-  („Bild hinzufügen“, mit Hinweis auf die Vorgaben des Akkreditierungsbüros). Der Browser verkleinert das Bild
+- Bei der öffentlichen Anmeldung sind **Vorname, Nachname, E-Mail und ein Foto Pflicht** (Telefon und Bemerkung
+  optional). Das Foto wird mit der Anmeldung zusammen gesendet und serverseitig geprüft; scheitert das
+  Speichern des Fotos, wird die Anmeldung wieder zurückgenommen. Über den persönlichen Link lässt sich das Foto
+  später ersetzen. Admins können Helfer weiterhin auch ohne E-Mail/Foto manuell eintragen.
+- „Bild hinzufügen“ zeigt zuerst die Vorgaben des Akkreditierungsbüros. Der Browser verkleinert das Bild
   vor dem Upload; gespeichert wird es in einem **privaten** Supabase-Storage-Bucket (`helper-photos`) ohne
   öffentliche Adresse. Zugriff nur über die Server-Routen mit dem Service-Role-Key.
 - Adminbereich → **Helfer & Schichten**: **„Download Akkreditierungsliste“** (Excel im Layout der FIS-Vorlage:

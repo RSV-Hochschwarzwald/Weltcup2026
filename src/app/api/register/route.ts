@@ -7,23 +7,27 @@ import {
   sendShiftFullNotification,
 } from "@/lib/email";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
+import { readPhotoFromForm, saveHelperPhoto } from "@/lib/photos";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ShiftPublicStatus } from "@/types/database";
 
 export const runtime = "nodejs";
 
-const schema = z
-  .object({
-    firstName: z.string().trim().min(1, "Vorname ist erforderlich").max(100),
-    lastName: z.string().trim().min(1, "Nachname ist erforderlich").max(100),
-    email: z.string().trim().email("Ungültige E-Mail-Adresse").max(200).optional().or(z.literal("")),
-    phone: z.string().trim().min(3).max(50).optional().or(z.literal("")),
-    notes: z.string().trim().max(1000).optional().or(z.literal("")),
-    shiftIds: z.array(z.string().uuid()).min(1, "Bitte wähle mindestens eine Schicht aus."),
-  })
-  .refine((data) => Boolean(data.email) || Boolean(data.phone), {
-    message: "Bitte gib entweder eine E-Mail-Adresse oder eine Telefonnummer an.",
-    path: ["email"],
-  });
+// Pflichtangaben: Vorname, Nachname, E-Mail und (separat geprüft) ein Foto.
+// Telefon und Bemerkung bleiben optional.
+const schema = z.object({
+  firstName: z.string().trim().min(1, "Bitte gib deinen Vornamen an.").max(100),
+  lastName: z.string().trim().min(1, "Bitte gib deinen Nachnamen an.").max(100),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Bitte gib deine E-Mail-Adresse an.")
+    .email("Bitte gib eine gültige E-Mail-Adresse an.")
+    .max(200),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  shiftIds: z.array(z.string().uuid()).min(1, "Bitte wähle mindestens eine Schicht aus."),
+});
 
 /** Anon-Key-Client: alle Schreibzugriffe laufen über die SECURITY DEFINER RPC-Funktion. */
 function publicSupabase() {
@@ -34,20 +38,47 @@ function publicSupabase() {
   );
 }
 
+function field(form: FormData, name: string): string {
+  const value = form.get(name);
+  return typeof value === "string" ? value : "";
+}
+
 export async function POST(request: Request) {
-  let body: unknown;
+  // Die Anmeldung kommt als multipart/form-data, weil das Pflicht-Foto direkt
+  // mitgeschickt wird: So wird alles VOR dem Speichern geprüft, und es gibt keine
+  // Anmeldung ohne Foto.
+  let form: FormData;
   try {
-    body = await request.json();
+    form = await request.formData();
   } catch {
     return NextResponse.json({ success: false, message: "Ungültige Anfrage." }, { status: 400 });
   }
 
-  const parsed = schema.safeParse(body);
+  let shiftIdsRaw: unknown = [];
+  try {
+    shiftIdsRaw = JSON.parse(field(form, "shiftIds") || "[]");
+  } catch {
+    return NextResponse.json({ success: false, message: "Ungültige Anfrage." }, { status: 400 });
+  }
+
+  const parsed = schema.safeParse({
+    firstName: field(form, "firstName"),
+    lastName: field(form, "lastName"),
+    email: field(form, "email"),
+    phone: field(form, "phone"),
+    notes: field(form, "notes"),
+    shiftIds: shiftIdsRaw,
+  });
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, message: parsed.error.issues[0]?.message ?? "Eingaben prüfen." },
       { status: 400 }
     );
+  }
+
+  const photo = await readPhotoFromForm(form);
+  if (!photo.ok) {
+    return NextResponse.json({ success: false, message: photo.message }, { status: photo.status });
   }
 
   const { firstName, lastName, email, phone, notes, shiftIds } = parsed.data;
@@ -87,12 +118,25 @@ export async function POST(request: Request) {
     }
     if (result.error === "contact_required") {
       return NextResponse.json(
-        { success: false, message: "Bitte gib entweder eine E-Mail-Adresse oder eine Telefonnummer an." },
+        { success: false, message: "Bitte gib deine E-Mail-Adresse an." },
         { status: 400 }
       );
     }
     return NextResponse.json(
       { success: false, message: "Deine Anmeldung konnte leider nicht gespeichert werden. Bitte versuche es erneut." },
+      { status: 500 }
+    );
+  }
+
+  // Foto ablegen. Gelingt das nicht, wird die gerade angelegte Anmeldung wieder
+  // entfernt, damit nie eine Anmeldung ohne Pflicht-Foto stehen bleibt - die
+  // Person bekommt eine Fehlermeldung und kann es einfach erneut versuchen.
+  const saved = await saveHelperPhoto(result.helper_id, photo.bytes);
+  if (!saved.ok) {
+    const { error: rollbackError } = await createAdminClient().from("helpers").delete().eq("id", result.helper_id);
+    if (rollbackError) console.error("[register] Rollback nach Foto-Fehler fehlgeschlagen", rollbackError);
+    return NextResponse.json(
+      { success: false, message: "Deine Anmeldung konnte leider nicht gespeichert werden (Foto). Bitte versuche es erneut." },
       { status: 500 }
     );
   }

@@ -206,7 +206,8 @@ export function EditRegistration({ token }: { token: string }) {
             type="email"
             value={helper.email ?? ""}
             onChange={(e) => setHelper({ ...helper, email: e.target.value })}
-            placeholder="E-Mail-Adresse"
+            placeholder="E-Mail-Adresse *"
+            required
           />
           <input
             className="input"

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ShiftCard } from "@/components/ShiftCard";
-import { RegistrationDialog, type PhotoStatus } from "@/components/RegistrationDialog";
+import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { SuccessScreen } from "@/components/SuccessScreen";
 import { useLiveShiftStatus } from "@/hooks/useLiveShiftStatus";
 import { formatDateLong } from "@/lib/format";
@@ -24,7 +24,6 @@ export function PublicShiftsBoard({
     editToken: string;
     bookedShiftIds: string[];
     waitlistedShiftIds: string[];
-    photoStatus: PhotoStatus;
   } | null>(null);
 
   const mappedShifts = useMemo(
@@ -141,7 +140,6 @@ export function PublicShiftsBoard({
           bookedShifts={bookedShifts}
           waitlistedShifts={waitlistedShifts}
           editToken={successResult.editToken}
-          photoStatus={successResult.photoStatus}
           onClose={() => setSuccessResult(null)}
         />
       )}

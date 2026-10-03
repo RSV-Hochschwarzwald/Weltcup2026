@@ -2,20 +2,17 @@
 
 import { formatDateLong, formatTimeRange } from "@/lib/format";
 import { config, getEditLink } from "@/lib/config";
-import type { PhotoStatus } from "@/components/RegistrationDialog";
 import type { PublicShift } from "@/types/database";
 
 export function SuccessScreen({
   bookedShifts,
   waitlistedShifts,
   editToken,
-  photoStatus,
   onClose,
 }: {
   bookedShifts: PublicShift[];
   waitlistedShifts: PublicShift[];
   editToken: string;
-  photoStatus: PhotoStatus;
   onClose: () => void;
 }) {
   const editLink = getEditLink(editToken);
@@ -53,17 +50,9 @@ export function SuccessScreen({
           </div>
         )}
 
-        {photoStatus === "uploaded" && (
-          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-left text-sm font-semibold text-emerald-800">
-            ✓ Dein Foto für die Akkreditierung wurde gespeichert.
-          </p>
-        )}
-        {photoStatus === "failed" && (
-          <p className="mt-4 rounded-xl bg-amber-50 p-3 text-left text-sm font-semibold text-amber-800">
-            Deine Anmeldung ist gespeichert, nur das Foto konnte leider nicht übertragen werden. Bitte reiche es
-            über deinen persönlichen Link unten nach.
-          </p>
-        )}
+        <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-left text-sm font-semibold text-emerald-800">
+          ✓ Dein Foto für die Akkreditierung wurde gespeichert.
+        </p>
 
         <p className="mt-5 text-sm text-slate-600">
           Wir freuen uns auf deine Unterstützung bei {config.eventName}.

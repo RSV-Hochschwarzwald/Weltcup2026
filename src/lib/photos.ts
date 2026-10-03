@@ -21,10 +21,16 @@ export async function readPhotoFromRequest(
   } catch {
     return { ok: false, status: 400, message: "Ungültige Anfrage." };
   }
+  return readPhotoFromForm(form);
+}
 
+/** Wie readPhotoFromRequest, für bereits eingelesene Formulardaten (z. B. die Anmeldung mit Pflicht-Foto). */
+export async function readPhotoFromForm(
+  form: FormData
+): Promise<{ ok: true; bytes: Uint8Array } | { ok: false; status: number; message: string }> {
   const file = form.get("photo");
   if (!(file instanceof File)) {
-    return { ok: false, status: 400, message: "Bitte wähle ein Foto aus." };
+    return { ok: false, status: 400, message: "Bitte füge ein Foto hinzu." };
   }
   if (file.size === 0 || file.size > MAX_PHOTO_BYTES) {
     return { ok: false, status: 413, message: "Das Foto ist zu groß. Bitte wähle ein kleineres Bild." };

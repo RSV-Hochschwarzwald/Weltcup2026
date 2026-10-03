@@ -18,11 +18,13 @@ export function PhotoPicker({
   onChange,
   hasExisting = false,
   disabled = false,
+  required = false,
 }: {
   value: PickedPhoto | null;
   onChange: (photo: PickedPhoto | null) => void;
   hasExisting?: boolean;
   disabled?: boolean;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHint, setShowHint] = useState(false);
@@ -51,10 +53,11 @@ export function PhotoPicker({
 
   return (
     <div className="rounded-xl border-2 border-dashed border-slate-300 p-4">
-      <p className="text-sm font-semibold text-slate-800">Foto für die Akkreditierung</p>
+      <p className="text-sm font-semibold text-slate-800">Foto für die Akkreditierung{required ? " *" : ""}</p>
       <p className="mt-1 text-xs text-slate-500">
-        Nur für das Organisationsteam sichtbar, nicht öffentlich. Du kannst es auch später über deinen
-        persönlichen Link nachreichen.
+        {required
+          ? "Pflichtangabe. Nur für das Organisationsteam sichtbar, nicht öffentlich."
+          : "Nur für das Organisationsteam sichtbar, nicht öffentlich."}
       </p>
 
       <input

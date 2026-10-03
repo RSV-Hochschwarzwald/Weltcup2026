@@ -3,14 +3,10 @@
 import { useMemo, useState } from "react";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
 import { config } from "@/lib/config";
-import { uploadPhoto } from "@/lib/photoClient";
 import { PhotoPicker, useRevokePreviewOnUnmount, type PickedPhoto } from "@/components/PhotoPicker";
 import type { PublicShift } from "@/types/database";
 
 type Step = "form" | "confirm" | "error";
-
-/** Ergebnis des optionalen Foto-Uploads direkt nach der Anmeldung. */
-export type PhotoStatus = "none" | "uploaded" | "failed";
 
 interface FormState {
   firstName: string;
@@ -29,12 +25,7 @@ export function RegistrationDialog({
 }: {
   shifts: PublicShift[];
   onClose: () => void;
-  onSuccess: (result: {
-    editToken: string;
-    bookedShiftIds: string[];
-    waitlistedShiftIds: string[];
-    photoStatus: PhotoStatus;
-  }) => void;
+  onSuccess: (result: { editToken: string; bookedShiftIds: string[]; waitlistedShiftIds: string[] }) => void;
 }) {
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -43,9 +34,10 @@ export function RegistrationDialog({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const contactValid = form.email.trim().length > 0 || form.phone.trim().length > 0;
+  // Pflichtangaben: Vorname, Nachname, E-Mail und Foto (der Server prüft das erneut).
+  const emailValid = /^\S+@\S+\.\S+$/.test(form.email.trim());
   const namesValid = form.firstName.trim().length > 0 && form.lastName.trim().length > 0;
-  const canContinue = namesValid && contactValid;
+  const canContinue = namesValid && emailValid && photo !== null;
 
   const sortedShifts = useMemo(
     () => [...shifts].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
@@ -56,18 +48,20 @@ export function RegistrationDialog({
     setSubmitting(true);
     setErrorMessage(null);
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          notes: form.notes.trim(),
-          shiftIds: sortedShifts.map((s) => s.shiftId),
-        }),
-      });
+      if (!photo) throw new Error("photo");
+
+      // Foto ist Pflicht und wird gemeinsam mit den Angaben gesendet - so wird
+      // serverseitig alles auf einmal geprüft (keine Anmeldung ohne Foto).
+      const body = new FormData();
+      body.append("firstName", form.firstName.trim());
+      body.append("lastName", form.lastName.trim());
+      body.append("email", form.email.trim());
+      body.append("phone", form.phone.trim());
+      body.append("notes", form.notes.trim());
+      body.append("shiftIds", JSON.stringify(sortedShifts.map((s) => s.shiftId)));
+      body.append("photo", photo.blob, "foto.jpg");
+
+      const res = await fetch("/api/register", { method: "POST", body });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -76,20 +70,10 @@ export function RegistrationDialog({
         return;
       }
 
-      // Das Foto folgt erst NACH der erfolgreichen Anmeldung (der Token aus der
-      // Antwort ist der Zugriffsschlüssel). Scheitert nur das Foto, bleibt die
-      // Anmeldung gültig - die Erfolgsseite weist dann aufs Nachreichen hin.
-      let photoStatus: PhotoStatus = "none";
-      if (photo) {
-        const upload = await uploadPhoto(`/api/registration/${data.editToken}/photo`, photo.blob);
-        photoStatus = upload.ok ? "uploaded" : "failed";
-      }
-
       onSuccess({
         editToken: data.editToken,
         bookedShiftIds: data.bookedShiftIds ?? [],
         waitlistedShiftIds: data.waitlistedShiftIds ?? [],
-        photoStatus,
       });
     } catch {
       setErrorMessage("Die Verbindung ist fehlgeschlagen. Bitte überprüfe deine Internetverbindung und versuche es erneut.");
@@ -129,7 +113,6 @@ export function RegistrationDialog({
         {step === "confirm" && (
           <ConfirmStep
             form={form}
-            hasPhoto={photo !== null}
             shifts={sortedShifts}
             submitting={submitting}
             onBack={() => setStep("form")}
@@ -203,7 +186,7 @@ function FormStep({
         </Field>
       </div>
 
-      <Field label="E-Mail-Adresse">
+      <Field label="E-Mail-Adresse *">
         <input
           type="email"
           className="input"
@@ -214,7 +197,7 @@ function FormStep({
         />
       </Field>
 
-      <Field label="Telefon / Handynummer">
+      <Field label="Telefon / Handynummer (optional)">
         <input
           type="tel"
           className="input"
@@ -225,8 +208,6 @@ function FormStep({
         />
       </Field>
 
-      <p className="text-sm text-slate-500">Bitte gib mindestens eine E-Mail-Adresse oder eine Telefonnummer an.</p>
-
       <Field label="Bemerkung (optional)">
         <textarea
           className="input min-h-[80px]"
@@ -235,9 +216,15 @@ function FormStep({
         />
       </Field>
 
-      <PhotoPicker value={photo} onChange={setPhoto} />
+      <PhotoPicker value={photo} onChange={setPhoto} required />
 
       <PrivacyNotice />
+
+      {!canContinue && (
+        <p className="text-sm text-slate-500">
+          Bitte fülle alle mit * markierten Felder aus und füge ein Foto hinzu, um fortzufahren.
+        </p>
+      )}
 
       <button
         type="button"
@@ -255,14 +242,12 @@ function FormStep({
 
 function ConfirmStep({
   form,
-  hasPhoto,
   shifts,
   submitting,
   onBack,
   onConfirm,
 }: {
   form: FormState;
-  hasPhoto: boolean;
   shifts: PublicShift[];
   submitting: boolean;
   onBack: () => void;
@@ -279,9 +264,7 @@ function ConfirmStep({
         </p>
         {form.email && <p className="text-sm text-slate-600">{form.email}</p>}
         {form.phone && <p className="text-sm text-slate-600">{form.phone}</p>}
-        <p className="mt-1 text-sm text-slate-600">
-          {hasPhoto ? "Foto: wird mit der Anmeldung übermittelt" : "Foto: noch keins hinzugefügt (kann nachgereicht werden)"}
-        </p>
+        <p className="mt-1 text-sm text-slate-600">Foto: wird mit der Anmeldung übermittelt</p>
       </div>
 
       <div className="flex gap-3">

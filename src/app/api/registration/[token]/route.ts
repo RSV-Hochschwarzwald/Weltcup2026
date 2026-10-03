@@ -36,18 +36,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   return NextResponse.json(result);
 }
 
-const patchSchema = z
-  .object({
-    firstName: z.string().trim().min(1).max(100),
-    lastName: z.string().trim().min(1).max(100),
-    email: z.string().trim().email().max(200).optional().or(z.literal("")),
-    phone: z.string().trim().min(3).max(50).optional().or(z.literal("")),
-    notes: z.string().trim().max(1000).optional().or(z.literal("")),
-  })
-  .refine((data) => Boolean(data.email) || Boolean(data.phone), {
-    message: "Bitte gib entweder eine E-Mail-Adresse oder eine Telefonnummer an.",
-    path: ["email"],
-  });
+const patchSchema = z.object({
+  firstName: z.string().trim().min(1, "Bitte gib deinen Vornamen an.").max(100),
+  lastName: z.string().trim().min(1, "Bitte gib deinen Nachnamen an.").max(100),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Bitte gib deine E-Mail-Adresse an.")
+    .email("Bitte gib eine gültige E-Mail-Adresse an.")
+    .max(200),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+});
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
