@@ -86,7 +86,9 @@ export function collectAccreditationHelpers(shifts: ShiftLike[]): AccreditationH
     id: h.id,
     firstName: h.first_name,
     lastName: h.last_name,
-    hasPhoto: h.photo_path !== null,
+    // Boolean() statt "!== null": Solange die Foto-Migration noch nicht
+    // eingespielt ist, fehlt das Feld ganz (undefined) und zählt als "kein Foto".
+    hasPhoto: Boolean(h.photo_path),
     photoFileName: fileNames.get(h.id) ?? "Helfer.jpg",
   }));
 }
