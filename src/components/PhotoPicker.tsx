@@ -18,13 +18,14 @@ export function PhotoPicker({
   onChange,
   hasExisting = false,
   disabled = false,
-  required = false,
+  showLaterHint = false,
 }: {
   value: PickedPhoto | null;
   onChange: (photo: PickedPhoto | null) => void;
   hasExisting?: boolean;
   disabled?: boolean;
-  required?: boolean;
+  /** Bei der Anmeldung: Hinweis, dass das Foto auch später nachgereicht werden kann. */
+  showLaterHint?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHint, setShowHint] = useState(false);
@@ -53,11 +54,10 @@ export function PhotoPicker({
 
   return (
     <div className="rounded-xl border-2 border-dashed border-slate-300 p-4">
-      <p className="text-sm font-semibold text-slate-800">Foto für die Akkreditierung{required ? " *" : ""}</p>
+      <p className="text-sm font-semibold text-slate-800">Foto für die Akkreditierung</p>
       <p className="mt-1 text-xs text-slate-500">
-        {required
-          ? "Pflichtangabe. Nur für das Organisationsteam sichtbar, nicht öffentlich."
-          : "Nur für das Organisationsteam sichtbar, nicht öffentlich."}
+        Nur für das Organisationsteam sichtbar, nicht öffentlich.
+        {showLaterHint && " Wir brauchen von jedem Helfer ein aktuelles Foto – du kannst es auch später über deinen persönlichen Link nachreichen."}
       </p>
 
       <input

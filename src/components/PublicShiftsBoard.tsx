@@ -24,6 +24,7 @@ export function PublicShiftsBoard({
     editToken: string;
     bookedShiftIds: string[];
     waitlistedShiftIds: string[];
+    photoSaved: boolean;
   } | null>(null);
 
   const mappedShifts = useMemo(
@@ -140,6 +141,7 @@ export function PublicShiftsBoard({
           bookedShifts={bookedShifts}
           waitlistedShifts={waitlistedShifts}
           editToken={successResult.editToken}
+          photoSaved={successResult.photoSaved}
           onClose={() => setSuccessResult(null)}
         />
       )}

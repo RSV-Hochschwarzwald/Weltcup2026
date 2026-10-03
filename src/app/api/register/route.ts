@@ -76,9 +76,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const photo = await readPhotoFromForm(form);
-  if (!photo.ok) {
-    return NextResponse.json({ success: false, message: photo.message }, { status: photo.status });
+  // Das Foto ist freiwillig (wird im Formular aber nachdrücklich erbeten). Wurde
+  // eines mitgeschickt, wird es vor dem Speichern geprüft.
+  let photoBytes: Uint8Array | null = null;
+  if (form.get("photo") instanceof File) {
+    const photo = await readPhotoFromForm(form);
+    if (!photo.ok) {
+      return NextResponse.json({ success: false, message: photo.message }, { status: photo.status });
+    }
+    photoBytes = photo.bytes;
   }
 
   const { firstName, lastName, email, phone, notes, shiftIds } = parsed.data;
@@ -128,17 +134,25 @@ export async function POST(request: Request) {
     );
   }
 
-  // Foto ablegen. Gelingt das nicht, wird die gerade angelegte Anmeldung wieder
-  // entfernt, damit nie eine Anmeldung ohne Pflicht-Foto stehen bleibt - die
-  // Person bekommt eine Fehlermeldung und kann es einfach erneut versuchen.
-  const saved = await saveHelperPhoto(result.helper_id, photo.bytes);
-  if (!saved.ok) {
-    const { error: rollbackError } = await createAdminClient().from("helpers").delete().eq("id", result.helper_id);
-    if (rollbackError) console.error("[register] Rollback nach Foto-Fehler fehlgeschlagen", rollbackError);
-    return NextResponse.json(
-      { success: false, message: "Deine Anmeldung konnte leider nicht gespeichert werden (Foto). Bitte versuche es erneut." },
-      { status: 500 }
-    );
+  // Foto ablegen, falls eines mitgeschickt wurde. Gelingt das nicht, wird die
+  // gerade angelegte Anmeldung wieder entfernt: Die Person hat ein Foto
+  // abgeschickt und soll nicht unbemerkt ohne dastehen. Sie bekommt eine
+  // Fehlermeldung und kann es erneut versuchen (oder ohne Foto anmelden).
+  let photoSaved = false;
+  if (photoBytes) {
+    const saved = await saveHelperPhoto(result.helper_id, photoBytes);
+    if (!saved.ok) {
+      const { error: rollbackError } = await createAdminClient().from("helpers").delete().eq("id", result.helper_id);
+      if (rollbackError) console.error("[register] Rollback nach Foto-Fehler fehlgeschlagen", rollbackError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Das Foto konnte leider nicht gespeichert werden, deine Anmeldung wurde deshalb nicht durchgeführt. Bitte versuche es erneut.",
+        },
+        { status: 500 }
+      );
+    }
+    photoSaved = true;
   }
 
   const allShiftIds = [...result.booked_shift_ids, ...result.waitlisted_shift_ids];
@@ -201,5 +215,6 @@ export async function POST(request: Request) {
     editToken: result.edit_token,
     bookedShiftIds: result.booked_shift_ids,
     waitlistedShiftIds: result.waitlisted_shift_ids,
+    photoSaved,
   });
 }

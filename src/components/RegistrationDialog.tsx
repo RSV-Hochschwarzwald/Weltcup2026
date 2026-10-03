@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { formatDateLong, formatTimeRange } from "@/lib/format";
 import { config } from "@/lib/config";
 import { PhotoPicker, useRevokePreviewOnUnmount, type PickedPhoto } from "@/components/PhotoPicker";
@@ -25,7 +25,12 @@ export function RegistrationDialog({
 }: {
   shifts: PublicShift[];
   onClose: () => void;
-  onSuccess: (result: { editToken: string; bookedShiftIds: string[]; waitlistedShiftIds: string[] }) => void;
+  onSuccess: (result: {
+    editToken: string;
+    bookedShiftIds: string[];
+    waitlistedShiftIds: string[];
+    photoSaved: boolean;
+  }) => void;
 }) {
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -34,10 +39,11 @@ export function RegistrationDialog({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Pflichtangaben: Vorname, Nachname, E-Mail und Foto (der Server prüft das erneut).
+  // Pflichtangaben: Vorname, Nachname und E-Mail (der Server prüft das erneut).
+  // Das Foto ist freiwillig - fehlt es, erinnert das Formular beim Weiterklicken.
   const emailValid = /^\S+@\S+\.\S+$/.test(form.email.trim());
   const namesValid = form.firstName.trim().length > 0 && form.lastName.trim().length > 0;
-  const canContinue = namesValid && emailValid && photo !== null;
+  const canContinue = namesValid && emailValid;
 
   const sortedShifts = useMemo(
     () => [...shifts].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
@@ -48,10 +54,8 @@ export function RegistrationDialog({
     setSubmitting(true);
     setErrorMessage(null);
     try {
-      if (!photo) throw new Error("photo");
-
-      // Foto ist Pflicht und wird gemeinsam mit den Angaben gesendet - so wird
-      // serverseitig alles auf einmal geprüft (keine Anmeldung ohne Foto).
+      // Das Foto (falls vorhanden) wird gemeinsam mit den Angaben gesendet - so
+      // wird serverseitig alles auf einmal geprüft.
       const body = new FormData();
       body.append("firstName", form.firstName.trim());
       body.append("lastName", form.lastName.trim());
@@ -59,7 +63,7 @@ export function RegistrationDialog({
       body.append("phone", form.phone.trim());
       body.append("notes", form.notes.trim());
       body.append("shiftIds", JSON.stringify(sortedShifts.map((s) => s.shiftId)));
-      body.append("photo", photo.blob, "foto.jpg");
+      if (photo) body.append("photo", photo.blob, "foto.jpg");
 
       const res = await fetch("/api/register", { method: "POST", body });
       const data = await res.json();
@@ -74,6 +78,7 @@ export function RegistrationDialog({
         editToken: data.editToken,
         bookedShiftIds: data.bookedShiftIds ?? [],
         waitlistedShiftIds: data.waitlistedShiftIds ?? [],
+        photoSaved: data.photoSaved === true,
       });
     } catch {
       setErrorMessage("Die Verbindung ist fehlgeschlagen. Bitte überprüfe deine Internetverbindung und versuche es erneut.");
@@ -113,6 +118,7 @@ export function RegistrationDialog({
         {step === "confirm" && (
           <ConfirmStep
             form={form}
+            hasPhoto={photo !== null}
             shifts={sortedShifts}
             submitting={submitting}
             onBack={() => setStep("form")}
@@ -163,6 +169,15 @@ function FormStep({
   canContinue: boolean;
   onContinue: () => void;
 }) {
+  const [showReminder, setShowReminder] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Ohne Foto wird nur erinnert - "Trotzdem weiter" lässt die Anmeldung zu.
+  function handleContinue() {
+    if (photo) onContinue();
+    else setShowReminder(true);
+  }
+
   return (
     <div className="space-y-4">
       <ShiftSummaryList shifts={shifts} />
@@ -216,38 +231,83 @@ function FormStep({
         />
       </Field>
 
-      <PhotoPicker value={photo} onChange={setPhoto} required />
+      <div ref={pickerRef}>
+        <PhotoPicker value={photo} onChange={setPhoto} showLaterHint />
+      </div>
 
       <PrivacyNotice />
 
       {!canContinue && (
         <p className="text-sm text-slate-500">
-          Bitte fülle alle mit * markierten Felder aus und füge ein Foto hinzu, um fortzufahren.
+          Bitte fülle alle mit * markierten Felder aus, um fortzufahren.
         </p>
       )}
 
       <button
         type="button"
         disabled={!canContinue}
-        onClick={onContinue}
+        onClick={handleContinue}
         className={`w-full rounded-xl px-4 py-4 text-base font-bold ${
           canContinue ? "bg-brand-600 text-white active:scale-[0.99]" : "cursor-not-allowed bg-slate-200 text-slate-400"
         }`}
       >
         Weiter zur Übersicht
       </button>
+
+      {showReminder && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="photo-reminder-title"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/60 sm:items-center sm:p-4"
+        >
+          <div className="w-full rounded-t-3xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-3xl">
+            <h3 id="photo-reminder-title" className="text-lg font-bold text-slate-900">
+              Dein Foto fehlt noch
+            </h3>
+            <p className="mt-3 text-sm text-slate-700">
+              Für die Akkreditierung beim Weltcup brauchen wir von jedem Helfer ein aktuelles Foto. Du kannst es
+              jetzt hinzufügen oder später über deinen persönlichen Link nachreichen – bitte vergiss es dann nicht.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReminder(false);
+                  pickerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                className="w-full rounded-xl bg-brand-600 px-4 py-3 font-bold text-white"
+              >
+                Foto hinzufügen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReminder(false);
+                  onContinue();
+                }}
+                className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 font-semibold text-slate-700"
+              >
+                Trotzdem weiter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function ConfirmStep({
   form,
+  hasPhoto,
   shifts,
   submitting,
   onBack,
   onConfirm,
 }: {
   form: FormState;
+  hasPhoto: boolean;
   shifts: PublicShift[];
   submitting: boolean;
   onBack: () => void;
@@ -264,7 +324,11 @@ function ConfirmStep({
         </p>
         {form.email && <p className="text-sm text-slate-600">{form.email}</p>}
         {form.phone && <p className="text-sm text-slate-600">{form.phone}</p>}
-        <p className="mt-1 text-sm text-slate-600">Foto: wird mit der Anmeldung übermittelt</p>
+        <p className={`mt-1 text-sm ${hasPhoto ? "text-slate-600" : "font-semibold text-amber-700"}`}>
+          {hasPhoto
+            ? "Foto: wird mit der Anmeldung übermittelt"
+            : "Foto: noch nicht hinzugefügt – bitte über deinen persönlichen Link nachreichen"}
+        </p>
       </div>
 
       <div className="flex gap-3">

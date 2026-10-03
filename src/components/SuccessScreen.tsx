@@ -8,11 +8,13 @@ export function SuccessScreen({
   bookedShifts,
   waitlistedShifts,
   editToken,
+  photoSaved,
   onClose,
 }: {
   bookedShifts: PublicShift[];
   waitlistedShifts: PublicShift[];
   editToken: string;
+  photoSaved: boolean;
   onClose: () => void;
 }) {
   const editLink = getEditLink(editToken);
@@ -50,9 +52,16 @@ export function SuccessScreen({
           </div>
         )}
 
-        <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-left text-sm font-semibold text-emerald-800">
-          ✓ Dein Foto für die Akkreditierung wurde gespeichert.
-        </p>
+        {photoSaved ? (
+          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-left text-sm font-semibold text-emerald-800">
+            ✓ Dein Foto für die Akkreditierung wurde gespeichert.
+          </p>
+        ) : (
+          <p className="mt-4 rounded-xl bg-amber-50 p-3 text-left text-sm font-semibold text-amber-800">
+            Dein Foto für die Akkreditierung fehlt noch. Bitte reiche es über deinen persönlichen Link unten
+            nach.
+          </p>
+        )}
 
         <p className="mt-5 text-sm text-slate-600">
           Wir freuen uns auf deine Unterstützung bei {config.eventName}.
